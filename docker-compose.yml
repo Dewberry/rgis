@@ -1,0 +1,24 @@
+version: "3.9"
+
+services:
+    
+    postgres:
+        image: kartoza/postgis:13.0
+        container_name: outreach-db
+        networks:
+          - rgis-net
+        ports:
+          - "5432:5432"
+        volumes:
+          - rgis-db:/var/lib/postgresql
+        environment:
+          - ALLOW_IP_RANGE=0.0.0.0/0
+        restart: on-failure
+
+
+volumes:
+    rgis-db:
+
+networks:
+    rgis-net:
+        driver: bridge
