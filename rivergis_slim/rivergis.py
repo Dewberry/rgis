@@ -35,10 +35,9 @@ import ras2dFunctions as r2d
 
 
 class RiverGIS:
-    def __init__(self, dbname, host, port, user, password):
+    def __init__(self, dbname, host, port, user, password, schema, srid):
 
-        self.rdb = rivdb.RiverDatabase(dbname, host, port, user, password)
-        self.schema = self.rdb.SCHEMA
+        self.rdb = rivdb.RiverDatabase(dbname, host, port, user, password, schema, srid)
 
     def rasCreateRdbTables(self):
 
@@ -57,37 +56,44 @@ class RiverGIS:
             except:
                 logging.error("  {0} - failure!".format(obj))
 
-    # def rasImportLayersIntoRdbTables(self):
-    #     """Import chosen layers into PostGIS database."""
-    #     from .dlg_rasImportDataIntoRasTables import DlgImportDataIntoRasTables
-
-    #     self.addInfo("<br><b>Import data into RAS PostGIS tables...</b>")
-    #     if not self.curConnName or not self.schema:
-    #         self.addInfo("No PostGIS database or schema selected. Choose a connection and schema.")
-    #         return
-    #     importData = DlgImportDataIntoRasTables(self)
-    #     importData.exec_()
-
-    def run(self, flow_area_2d_file, out_ras_geom_file):
+    def run(
+        self, out_ras_geom_file, flow_area_2d_file, breaklines_file=None, mesh_preview_file=None
+    ):  # , breakpolygons_file=None):
         try:
+
+            # SETUP
             self.rdb.connect_pg()
             self.rdb.create_schema(self.rdb.SCHEMA)
             self.rdb.create_spatial_index()
             self.rasCreateRdbTables()
+
+            # LOAD GIS DATA IN
             self.rdb.load_gis_file(flow_area_2d_file, heco.FlowAreas2d().name)
+            if breaklines_file:
+                self.rdb.load_gis_file(breaklines_file, heco.BreakLines2d().name)
+            # if breakpolygons_file:
+            #     self.rdb.load_gis_file(breakpolygons_file, heco.????().name)
+
+            # CREATE RAS DATA
             r2d.ras2dCreate2dPoints(self)
-            # r2d.ras2dPreviewMesh(self)
+            if mesh_preview_file:
+                r2d.ras2dPreviewMesh(self, mesh_preview_file)
             r2d.ras2dSaveMeshPtsToGeometry(self, out_ras_geom_file)
+
         except Exception as e:
             logging.error(e, exc_info=1)
         finally:
+            # CLEANUP
+            self.rdb.drop_schema(self.rdb.SCHEMA, cascade=True)
             self.rdb.disconnect_pg()
 
 
 if __name__ == "__main__":
 
-    rgis = RiverGIS("gis", "localhost", "5432", "docker", "docker")
+    rgis = RiverGIS("gis", "localhost", "5432", "docker", "docker", "testschema", 2284)
     rgis.run(
-        "/home/abrazeau/workbench/repos/rgis/data/input_area.shp",
         "/home/abrazeau/workbench/repos/rgis/data/test_prj.g01",
+        "/home/abrazeau/workbench/repos/rgis/data/input_area.shp",
+        "/home/abrazeau/workbench/repos/rgis/data/breaklines.geojson",
+        "/home/abrazeau/workbench/repos/rgis/data/mesh_preview.geojson",
     )

@@ -35,12 +35,10 @@ class RiverDatabase(object):
     Class for PostgreSQL database and hydrodynamic models handling.
     """
 
-    SCHEMA = "start"
-    SRID = 2284
     OVERWRITE = True
     LOAD_ALL = True
 
-    def __init__(self, dbname, host, port, user, password):
+    def __init__(self, dbname, host, port, user, password, schema, srid):
         """
         Constructor for database object
 
@@ -56,6 +54,8 @@ class RiverDatabase(object):
         self.port = port
         self.user = user
         self.password = password
+        self.SCHEMA = schema
+        self.SRID = srid
         self.con = None
         self.register = {}
         self.queries = {}
@@ -454,10 +454,19 @@ $BODY$
         self.run_query(qry)
 
     def load_gis_file(self, file_name, target_table):
-        gdf = gpd.read_file(file_name).rename_geometry("geom")
+        gdf = gpd.read_file(file_name).rename_geometry("geom").to_crs("EPSG:{0}".format(self.SRID))
 
         conn_params = "postgresql+psycopg2://{0}:{1}@{2}:{3}/{4}".format(
             self.user, self.password, self.host, self.port, self.dbname
         )
 
         gdf.to_postgis(target_table, create_engine(conn_params), schema=self.SCHEMA, if_exists="replace")
+
+    def table_to_gdf(self, target_table):
+        conn_params = "postgresql+psycopg2://{0}:{1}@{2}:{3}/{4}".format(
+            self.user, self.password, self.host, self.port, self.dbname
+        )
+
+        qry = 'SELECT * FROM "{0}"."{1}";'.format(self.SCHEMA, target_table)
+
+        return gpd.read_postgis(qry, create_engine(conn_params))

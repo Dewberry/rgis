@@ -27,6 +27,8 @@ import logging
 import hecobjects as heco
 from math import floor
 from psycopg2 import ProgrammingError
+import geopandas as gpd
+from shapely.ops import voronoi_diagram
 
 
 def ras2dCreate2dPoints(rgis):
@@ -229,46 +231,29 @@ def ras2dCreate2dPoints(rgis):
     logging.info("Done")
 
 
-# def ras2dPreviewMesh(rgis):
-#     """Build and load Voronoi polygons for the mesh points"""
-#     u1 = QgsDataSourceUri()
-#     u1.setConnection(rgis.host, rgis.port, rgis.database, rgis.user, rgis.passwd)
-#     u1.setDataSource(rgis.schema, "MeshPoints2d", "geom")
-#     mesh_pts = QgsVectorLayer(u1.uri(), "MeshPoints2d", "postgres")
-#     u2 = QgsDataSourceUri()
-#     u2.setConnection(rgis.host, rgis.port, rgis.database, rgis.user, rgis.passwd)
-#     u2.setDataSource(rgis.schema, "FlowAreas2d", "geom")
-#     areas = QgsVectorLayer(u2.uri(), "FlowAreas2d", "postgres")
+def ras2dPreviewMesh(rgis, output_filename):
+    """Build and load Voronoi polygons for the mesh points"""
 
-#     pts_list = []
-#     for pt in mesh_pts.getFeatures():
-#         pts_list.append(pt.geometry())
-#     multipts = QgsGeometry().unaryUnion(pts_list)
+    areas = rgis.rdb.table_to_gdf("flowareas2d")
+    mesh_pts = rgis.rdb.table_to_gdf("meshpoints2d")
+    assert areas.crs == mesh_pts.crs, "flowareas2d and meshpoints2d have different coordinate systems!"
 
-#     voronoi = multipts.voronoiDiagram()
-#     voronoi_lyr = QgsVectorLayer("Polygon?crs=proj4:{}".format(rgis.crs.toProj4()), "Mesh preview", "memory")
-#     voronoi_dp = voronoi_lyr.dataProvider()
+    multipts = mesh_pts.geometry.unary_union
+    voronoi = voronoi_diagram(multipts).geoms
 
-#     new_feats = []
-#     for area in areas.getFeatures():
-#         for item in voronoi.asGeometryCollection():
-#             poly = QgsGeometry.fromPolygonXY(item.asPolygon())
-#             poly_cut = poly.intersection(area.geometry())
-#             fet = QgsFeature()
-#             fet.setGeometry(poly_cut)
-#             new_feats.append(fet)
+    new_feats = []
+    for area in areas.geometry:
+        for item in voronoi:
+            poly_cut = item.intersection(area)
+            new_feats.append(poly_cut)
 
-#     _ = voronoi_dp.addFeatures(new_feats)
+    data = list(zip(range(len(new_feats)), new_feats))
 
-#     QgsProject.instance().addMapLayer(voronoi_lyr)
+    out_mesh_preview = gpd.GeoDataFrame(
+        gpd.pd.DataFrame(data, columns=["id", "geometry"]), crs=areas.crs, geometry="geometry"
+    )
 
-#     # change layers' style
-#     root = QgsProject.instance().layerTreeRoot()
-#     leg_items = root.findLayers()
-#     for item in leg_items:
-#         if item.name() == "Mesh preview":
-#             style_path = os.path.join(rgis.rivergisPath, "styles/Mesh2d.qml")
-#             item.layer().loadNamedStyle(style_path)
+    out_mesh_preview.to_file(output_filename, driver="GeoJSON")
 
 
 def ras2dSaveMeshPtsToGeometry(rgis, geoFileName):
@@ -345,7 +330,7 @@ Storage Area Point Generation Data=,,,
         WHERE
             "AreaID" = {2};
         """
-        qry = qry.format(rgis.schema, heco.MeshPoints2d().name, area["AreaID"])
+        qry = qry.format(rgis.rdb.SCHEMA, heco.MeshPoints2d().name, area["AreaID"])
         pkty = rgis.rdb.run_query(qry, True)
 
         coords = ""
