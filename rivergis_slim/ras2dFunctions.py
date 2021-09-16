@@ -256,6 +256,11 @@ def ras2dPreviewMesh(rgis, output_filename):
     out_mesh_preview.to_file(output_filename, driver="GeoJSON")
 
 
+def ras2dPreviewMeshPoints(rgis, output_filename):
+    rgis.rdb.table_to_gdf("meshpoints2d").to_file(output_filename, driver="GeoJSON")
+    return
+
+
 def ras2dSaveMeshPtsToGeometry(rgis, geoFileName):
     """Saves mesh points from current schema and table 'mesh_pts' to HEC-RAS geometry file"""
 

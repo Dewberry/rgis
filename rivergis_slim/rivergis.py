@@ -57,8 +57,13 @@ class RiverGIS:
                 logging.error("  {0} - failure!".format(obj))
 
     def run(
-        self, out_ras_geom_file, flow_area_2d_file, breaklines_file=None, mesh_preview_file=None
-    ):  # , breakpolygons_file=None):
+        self,
+        out_ras_geom_file,
+        flow_area_2d_file,
+        breaklines_file=None,
+        mesh_preview_file=None,
+        mesh_pts_preview_file=None,
+    ):
         try:
 
             # SETUP
@@ -76,8 +81,13 @@ class RiverGIS:
 
             # CREATE RAS DATA
             r2d.ras2dCreate2dPoints(self)
+
             if mesh_preview_file:
                 r2d.ras2dPreviewMesh(self, mesh_preview_file)
+
+            if mesh_pts_preview_file:
+                r2d.ras2dPreviewMeshPoints(self, mesh_pts_preview_file)
+
             r2d.ras2dSaveMeshPtsToGeometry(self, out_ras_geom_file)
 
         except Exception as e:
@@ -96,4 +106,5 @@ if __name__ == "__main__":
         "/home/abrazeau/workbench/repos/rgis/data/input_area.shp",
         "/home/abrazeau/workbench/repos/rgis/data/breaklines.geojson",
         "/home/abrazeau/workbench/repos/rgis/data/mesh_preview.geojson",
+        "/home/abrazeau/workbench/repos/rgis/data/mesh_pts_preview.geojson",
     )
