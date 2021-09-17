@@ -234,6 +234,8 @@ def ras2dCreate2dPoints(rgis):
 def ras2dPreviewMesh(rgis, output_filename):
     """Build and load Voronoi polygons for the mesh points"""
 
+    logging.info("Creating mesh_preview")
+
     areas = rgis.rdb.table_to_gdf("flowareas2d")
     mesh_pts = rgis.rdb.table_to_gdf("meshpoints2d")
     assert areas.crs == mesh_pts.crs, "flowareas2d and meshpoints2d have different coordinate systems!"
@@ -253,10 +255,28 @@ def ras2dPreviewMesh(rgis, output_filename):
         gpd.pd.DataFrame(data, columns=["id", "geometry"]), crs=areas.crs, geometry="geometry"
     )
 
-    out_mesh_preview.to_file(output_filename, driver="GeoJSON")
+    too_many_faces = out_mesh_preview[
+        out_mesh_preview.geometry.apply(lambda x: True if len(x.exterior.coords) > 8 else False)
+    ]
+
+    for i in too_many_faces["id"]:
+        logging.warning("Mesh Cell {0} has too many faces!".format(i))
+
+    if len(too_many_faces) > 0:
+        for g in too_many_faces["geometry"]:
+            rgis.rdb.subdivide_poly_update_meshpts2d(g.wkt)
+        logging.warning("Recursing to eliminate cells with too many faces...")
+        ras2dPreviewMesh(rgis, output_filename)
+
+    else:
+        logging.info("Saving mesh_preview to: {}".format(output_filename))
+        out_mesh_preview.to_file(output_filename, driver="GeoJSON")
+
+    return
 
 
 def ras2dPreviewMeshPoints(rgis, output_filename):
+    logging.info("Saving meshpoints2d to: {}".format(output_filename))
     rgis.rdb.table_to_gdf("meshpoints2d").to_file(output_filename, driver="GeoJSON")
     return
 
@@ -376,7 +396,7 @@ Storage Area Mannings=0.06
     geoFile.write(geo)
     geoFile.close()
 
-    logging.info("Saved to:\n{}".format(geoFileName))
+    logging.info("Saved to: {}".format(geoFileName))
 
 
 def createNewGeometry(filename, extent):

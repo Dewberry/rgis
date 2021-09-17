@@ -470,3 +470,37 @@ $BODY$
         qry = 'SELECT * FROM "{0}"."{1}";'.format(self.SCHEMA, target_table)
 
         return gpd.read_postgis(qry, create_engine(conn_params))
+
+    def subdivide_poly_update_meshpts2d(self, wkt):
+        conn_params = "postgresql+psycopg2://{0}:{1}@{2}:{3}/{4}".format(
+            self.user, self.password, self.host, self.port, self.dbname
+        )
+        engine = create_engine(conn_params)
+
+        qry = "SELECT ST_Centroid(ST_SubDivide('{0}'::geometry, 8)) AS geom;".format(wkt)
+
+        new_pts = list(gpd.read_postgis(qry, engine).geom)
+
+        qry = """SELECT "AreaID" FROM "{0}"."meshpoints2d" WHERE ST_Intersects(ST_SetSRID('{1}'::geometry, {2}), geom);""".format(
+            self.SCHEMA, wkt, self.SRID
+        )
+        area_id = list(gpd.pd.read_sql(qry, engine)["AreaID"])[0]
+
+        qry = (
+            """DELETE FROM "{0}"."meshpoints2d" WHERE ST_Intersects(ST_SetSRID('{1}'::geometry, {2}), geom);""".format(
+                self.SCHEMA, wkt, self.SRID
+            )
+        )
+        self.run_query(qry)
+
+        for pt in new_pts:
+            qry = """INSERT INTO "{0}"."meshpoints2d" (geom, "AreaID", "BLID") 
+            values
+            ( 
+                ST_SetSRID('{1}'::geometry, {2}),
+                '{3}',
+                -1
+            );""".format(
+                self.SCHEMA, pt.wkt, self.SRID, area_id
+            )
+            self.run_query(qry)

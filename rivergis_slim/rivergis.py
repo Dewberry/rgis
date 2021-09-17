@@ -52,9 +52,9 @@ class RiverGIS:
         for hecobj_class in tables:
             obj = self.rdb.process_hecobject(hecobj_class, "pg_create_table")
             try:
-                logging.info("  {0} OK".format(obj.name))
+                logging.info("{0} OK".format(obj.name))
             except:
-                logging.error("  {0} - failure!".format(obj))
+                logging.error("{0} - failure!".format(obj))
 
     def run(
         self,
@@ -76,8 +76,6 @@ class RiverGIS:
             self.rdb.load_gis_file(flow_area_2d_file, heco.FlowAreas2d().name)
             if breaklines_file:
                 self.rdb.load_gis_file(breaklines_file, heco.BreakLines2d().name)
-            # if breakpolygons_file:
-            #     self.rdb.load_gis_file(breakpolygons_file, heco.????().name)
 
             # CREATE RAS DATA
             r2d.ras2dCreate2dPoints(self)
@@ -94,11 +92,15 @@ class RiverGIS:
             logging.error(e, exc_info=1)
         finally:
             # CLEANUP
-            self.rdb.drop_schema(self.rdb.SCHEMA, cascade=True)
+            # self.rdb.drop_schema(self.rdb.SCHEMA, cascade=True)
             self.rdb.disconnect_pg()
 
 
 if __name__ == "__main__":
+
+    logging.basicConfig(
+        level=logging.INFO, format="%(levelname)s -- [ %(filename)s:%(funcName)s:%(lineno)d ]  ::  %(message)s"
+    )
 
     rgis = RiverGIS("gis", "localhost", "5432", "docker", "docker", "testschema", 2284)
     rgis.run(
