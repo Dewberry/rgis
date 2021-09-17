@@ -1776,6 +1776,29 @@ WHERE
         WHERE
             ST_Intersects(pts.geom, areas2dshrinked.geom));
 
+DELETE FROM
+    "{0}"."meshpoints2d" AS pts_a
+WHERE
+    pts_a."MPID" IN
+        (SELECT
+            pts."MPID"
+        FROM
+            "{0}"."meshpoints2d" AS pts,
+            "{0}"."refinementareas2d"
+        WHERE
+            ST_Intersects(pts.geom, refinementareas2d.geom)
+        AND
+            pts."AreaID" = "refinementareas2d"."AreaID");
+
+INSERT INTO
+    "{0}"."meshpoints2d" ("AreaID", "BLID", geom)
+SELECT
+    "AreaID",
+    -1,
+    (ST_Dump("{0}".makegrid(geom, "CellSize", {1}))).geom AS geom
+FROM
+    "{0}"."refinementareas2d";
+
 DROP FUNCTION IF EXISTS "{0}".makegrid(geometry, float, integer);
 """
         qry = qry.format(self.schema, self.srid)
