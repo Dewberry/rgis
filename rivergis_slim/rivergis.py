@@ -60,8 +60,8 @@ class RiverGIS:
         self,
         out_ras_geom_file,
         flow_area_2d_file,
+        mesh_preview_file,
         breaklines_file=None,
-        mesh_preview_file=None,
         mesh_pts_preview_file=None,
     ):
         try:
@@ -80,8 +80,7 @@ class RiverGIS:
             # CREATE RAS DATA
             r2d.ras2dCreate2dPoints(self)
 
-            if mesh_preview_file:
-                r2d.ras2dPreviewMesh(self, mesh_preview_file)
+            r2d.ras2dPreviewMesh(self, mesh_preview_file)
 
             if mesh_pts_preview_file:
                 r2d.ras2dPreviewMeshPoints(self, mesh_pts_preview_file)
@@ -92,7 +91,7 @@ class RiverGIS:
             logging.error(e, exc_info=1)
         finally:
             # CLEANUP
-            # self.rdb.drop_schema(self.rdb.SCHEMA, cascade=True)
+            self.rdb.drop_schema(self.rdb.SCHEMA, cascade=True)
             self.rdb.disconnect_pg()
 
 
@@ -106,7 +105,7 @@ if __name__ == "__main__":
     rgis.run(
         "/home/abrazeau/workbench/repos/rgis/data/test_prj.g01",
         "/home/abrazeau/workbench/repos/rgis/data/input_area.shp",
-        "/home/abrazeau/workbench/repos/rgis/data/breaklines.geojson",
         "/home/abrazeau/workbench/repos/rgis/data/mesh_preview.geojson",
+        "/home/abrazeau/workbench/repos/rgis/data/breaklines.geojson",
         "/home/abrazeau/workbench/repos/rgis/data/mesh_pts_preview.geojson",
     )
