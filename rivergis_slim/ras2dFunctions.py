@@ -269,8 +269,10 @@ def ras2dPreviewMesh(rgis, output_filename):
         ras2dPreviewMesh(rgis, output_filename)
 
     else:
-        logging.info("Saving mesh_preview to: {}".format(output_filename))
-        out_mesh_preview.to_file(output_filename, driver="GeoJSON")
+        if output_filename:
+            logging.info("Saving mesh_preview to: {}".format(output_filename))
+            out_mesh_preview.to_file(output_filename, driver="GeoJSON")
+        logging.info("Number of faces has been enforced")
 
     return
 
