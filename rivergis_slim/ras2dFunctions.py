@@ -22,6 +22,7 @@ from __future__ import absolute_import
 from builtins import range
 import os
 import logging
+from datetime import datetime
 
 # from . import hecobjects as heco
 import hecobjects as heco
@@ -369,7 +370,7 @@ Storage Area Point Generation Data=,,,
 
         t += """Storage Area 2D Points= {0}
 {1}
-Storage Area 2D PointsPerimeterTime=25Jan2015 01:00:00
+Storage Area 2D PointsPerimeterTime={2}
 Storage Area Mannings=0.06
 2D Cell Volume Filter Tolerance=0.003
 2D Face Profile Filter Tolerance=0.003
@@ -377,7 +378,7 @@ Storage Area Mannings=0.06
 2D Face Area Elevation Conveyance Ratio=0.02
 
 """.format(
-            len(pkty), coords
+            len(pkty), coords, datetime.now().strftime("%d%b%Y %H:%M:%S")
         )
 
     if not os.path.isfile(geoFileName):
