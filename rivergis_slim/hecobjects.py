@@ -1572,6 +1572,19 @@ class FlowAreas2d(HecRasObject):
         self.attrs = [('"AreaID"', "serial primary key"), ('"Name"', "text"), ('"CellSize"', "double precision")]
 
 
+class RefinementAreas2d(HecRasObject):
+    def __init__(self):
+        super(RefinementAreas2d, self).__init__()
+        self.order = -5
+        self.geom_type = "POLYGON"
+        self.attrs = [
+            ('"RFID"', "serial primary key"),
+            ('"AreaID"', "integer"),
+            ('"Name"', "text"),
+            ('"CellSize"', "double precision"),
+        ]
+
+
 class BreakLines2d(HecRasObject):
     def __init__(self):
         super(BreakLines2d, self).__init__()

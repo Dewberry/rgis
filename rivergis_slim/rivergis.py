@@ -46,6 +46,7 @@ class RiverGIS:
             heco.BreakPoints2d,
             heco.FlowAreas2d,
             heco.MeshPoints2d,
+            heco.RefinementAreas2d,
         ]
         tables.sort(key=lambda x: x().order)
 
@@ -61,6 +62,7 @@ class RiverGIS:
         out_ras_geom_file,
         flow_area_2d_file,
         breaklines_file=None,
+        refinement_area_file=None,
         mesh_preview_file=None,
         mesh_pts_preview_file=None,
     ):
@@ -76,6 +78,8 @@ class RiverGIS:
             self.rdb.load_gis_file(flow_area_2d_file, heco.FlowAreas2d().name)
             if breaklines_file:
                 self.rdb.load_gis_file(breaklines_file, heco.BreakLines2d().name)
+            if refinement_area_file:
+                self.rdb.load_gis_file(refinement_area_file, heco.RefinementAreas2d().name)
 
             # CREATE RAS DATA
             r2d.ras2dCreate2dPoints(self)
@@ -91,7 +95,7 @@ class RiverGIS:
             logging.error(e, exc_info=1)
         finally:
             # CLEANUP
-            self.rdb.drop_schema(self.rdb.SCHEMA, cascade=True)
+            # self.rdb.drop_schema(self.rdb.SCHEMA, cascade=True)
             self.rdb.disconnect_pg()
 
 
@@ -106,6 +110,7 @@ if __name__ == "__main__":
         "/home/abrazeau/workbench/repos/rgis/data/test_prj.g01",
         "/home/abrazeau/workbench/repos/rgis/data/input_area.shp",
         "/home/abrazeau/workbench/repos/rgis/data/breaklines.geojson",
+        "/home/abrazeau/workbench/repos/rgis/data/refinement_area.shp",
         "/home/abrazeau/workbench/repos/rgis/data/mesh_preview.geojson",
         "/home/abrazeau/workbench/repos/rgis/data/mesh_pts_preview.geojson",
     )
