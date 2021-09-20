@@ -381,6 +381,32 @@ Storage Area Mannings=0.06
             len(pkty), coords, datetime.now().strftime("%d%b%Y %H:%M:%S")
         )
 
+    qry = """
+    SELECT 
+        'Breakline' || LPAD("BLID"::TEXT, 3, '0') AS breakline_name,
+        ST_NPoints(geom) AS num_coords,
+        SUBSTRING(ST_AsText(geom), '\((.+)\)') AS coords
+    FROM {0}.breaklines2d;
+    """.format(
+        rgis.rdb.SCHEMA
+    )
+    for i, breakline in enumerate(rgis.rdb.run_query(qry, True)):
+        ptsList = breakline["coords"].split(",")
+        ptsTxt = ""
+        for pt in ptsList:
+            x, y = [float(c) for c in pt.split(" ")]
+            ptsTxt += "{:>16.4f}{:>16.4f}\n".format(x, y)
+
+        t += """BreakLine Name={0}
+BreakLine CellSize Min=
+BreakLine CellSize Max=
+BreakLine Near Repeats=3
+BreakLine Protection Radius=-1
+BreakLine Polyline= {1} 
+{2}""".format(
+            breakline["breakline_name"], breakline["num_coords"], ptsTxt
+        )
+
     if not os.path.isfile(geoFileName):
         createNewGeometry(geoFileName, pExtStr)
 

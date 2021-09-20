@@ -95,7 +95,7 @@ class RiverGIS:
             logging.error(e, exc_info=1)
         finally:
             # CLEANUP
-            # self.rdb.drop_schema(self.rdb.SCHEMA, cascade=True)
+            self.rdb.drop_schema(self.rdb.SCHEMA, cascade=True)
             self.rdb.disconnect_pg()
 
 
