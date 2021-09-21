@@ -393,9 +393,12 @@ Storage Area Mannings=0.06
     for i, breakline in enumerate(rgis.rdb.run_query(qry, True)):
         ptsList = breakline["coords"].split(",")
         ptsTxt = ""
-        for pt in ptsList:
+        for i, pt in enumerate(ptsList):
             x, y = [float(c) for c in pt.split(" ")]
-            ptsTxt += "{:>16.4f}{:>16.4f}\n".format(x, y)
+            if i % 2 == 0:
+                ptsTxt += "{:>16.4f}{:>16.4f}".format(x, y)
+            else:
+                ptsTxt += "{:>16.4f}{:>16.4f}\n".format(x, y)
 
         t += """BreakLine Name={0}
 BreakLine CellSize Min=
@@ -405,6 +408,57 @@ BreakLine Protection Radius=-1
 BreakLine Polyline= {1} 
 {2}""".format(
             breakline["breakline_name"], breakline["num_coords"], ptsTxt
+        )
+
+    qry = """
+    SELECT
+        'BoundLine' || LPAD("AreaID"::TEXT, 3, '0')  AS bc_line_name,
+        "Name" AS bc_line_storage_area_name,
+        ST_X(ST_LineInterpolatePoint(
+            ST_ExteriorRing(ST_ConvexHull(ST_Buffer(ST_Union(geom), MAX("CellSize") * 2))),
+            0.50)) AS middle_x,
+        ST_Y(ST_LineInterpolatePoint(
+            ST_ExteriorRing(ST_ConvexHull(ST_Buffer(ST_Union(geom), MAX("CellSize") * 2))),
+            0.50)) AS middle_Y,
+        ST_NPoints(ST_Union(geom)) AS num_coords,
+        SUBSTRING(ST_AsText(ST_ExteriorRing(ST_ConvexHull(ST_Buffer(ST_Union(geom), MAX("CellSize") * 2)))), '\((.+)\)') AS coords
+    FROM {0}.flowareas2d
+    GROUP BY "AreaID", "Name";""".format(
+        rgis.rdb.SCHEMA
+    )
+    for i, bc_line in enumerate(rgis.rdb.run_query(qry, True)):
+        ptsList = bc_line["coords"].split(",")
+        ptsTxt = ""
+        for i, pt in enumerate(ptsList):
+            x, y = [float(c) for c in pt.split(" ")]
+            if i == 0:
+                start_x, start_y = x, y
+            if i == len(ptsList) - 1:
+                end_x, end_y = x, y
+            if i % 2 == 0:
+                ptsTxt += "{:>16.4f}{:>16.4f}".format(x, y)
+            else:
+                ptsTxt += "{:>16.4f}{:>16.4f}\n".format(x, y)
+
+        t += """BC Line Name={0}                     
+BC Line Storage Area={1}          
+BC Line Start Position= {2} , {3} 
+BC Line Middle Position= {4} , {5} 
+BC Line End Position= {6} , {7}
+BC Line Arc= {8} 
+{9}
+BC Line Text Position= 1.79769313486232E+308 , 1.79769313486232E+308
+""".format(
+            bc_line["bc_line_name"],
+            bc_line["bc_line_storage_area_name"],
+            start_x,
+            start_y,
+            bc_line["middle_x"],
+            bc_line["middle_y"],
+            end_x,
+            end_y,
+            bc_line["num_coords"],
+            ptsTxt,
         )
 
     if not os.path.isfile(geoFileName):
