@@ -63,8 +63,8 @@ class RiverGIS:
         flow_area_2d_file,
         breaklines_file=None,
         refinement_area_file=None,
-        mesh_preview_file=None,
-        mesh_pts_preview_file=None,
+        mesh_preview_file_geojson=None,
+        mesh_pts_preview_file_geojson=None,
     ):
         try:
 
@@ -84,10 +84,10 @@ class RiverGIS:
             # CREATE RAS DATA
             r2d.ras2dCreate2dPoints(self)
 
-            r2d.ras2dPreviewMesh(self, output_filename=mesh_preview_file)
+            r2d.ras2dPreviewMesh(self, output_filename=mesh_preview_file_geojson)
 
-            if mesh_pts_preview_file:
-                r2d.ras2dPreviewMeshPoints(self, mesh_pts_preview_file)
+            if mesh_pts_preview_file_geojson:
+                r2d.ras2dPreviewMeshPoints(self, mesh_pts_preview_file_geojson)
 
             r2d.ras2dSaveMeshPtsToGeometry(self, out_ras_geom_file)
 
