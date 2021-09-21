@@ -406,7 +406,8 @@ BreakLine CellSize Max=
 BreakLine Near Repeats=3
 BreakLine Protection Radius=-1
 BreakLine Polyline= {1} 
-{2}""".format(
+{2}
+""".format(
             breakline["breakline_name"], breakline["num_coords"], ptsTxt
         )
 
@@ -420,7 +421,7 @@ BreakLine Polyline= {1}
         ST_Y(ST_LineInterpolatePoint(
             ST_ExteriorRing(ST_ConvexHull(ST_Buffer(ST_Union(geom), MAX("CellSize") * 2))),
             0.50)) AS middle_Y,
-        ST_NPoints(ST_Union(geom)) AS num_coords,
+        ST_NPoints(ST_ExteriorRing(ST_ConvexHull(ST_Buffer(ST_Union(geom), MAX("CellSize") * 2)))) AS num_coords,
         SUBSTRING(ST_AsText(ST_ExteriorRing(ST_ConvexHull(ST_Buffer(ST_Union(geom), MAX("CellSize") * 2)))), '\((.+)\)') AS coords
     FROM {0}.flowareas2d
     GROUP BY "AreaID", "Name";""".format(
@@ -479,6 +480,8 @@ BC Line Text Position= 1.79769313486232E+308 , 1.79769313486232E+308
     geoFile.write(geo)
     geoFile.close()
 
+    force_windows_line_endings(geoFileName)
+
     logging.info("Saved to: {}".format(geoFileName))
 
 
@@ -502,3 +505,17 @@ Composite Channel Slope=5
     geoFile = open(filename, "w")
     geoFile.write(t)
     geoFile.close()
+
+
+def force_windows_line_endings(fname):
+    # replacement strings
+    WINDOWS_LINE_ENDING = b"\r\n"
+    UNIX_LINE_ENDING = b"\n"
+
+    with open(fname, "rb") as open_file:
+        content = open_file.read()
+
+    content = content.replace(UNIX_LINE_ENDING, WINDOWS_LINE_ENDING)
+
+    with open(fname, "wb") as open_file:
+        open_file.write(content)
