@@ -4,7 +4,7 @@ services:
     
     postgres:
         image: kartoza/postgis:13.0
-        container_name: outreach-db
+        container_name: rgis-db
         networks:
           - rgis-net
         ports:
